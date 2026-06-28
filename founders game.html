@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#08080f">
+    <title>Founder's Journey — The Decision Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root{--bg:#08080f;--bg-card:rgba(255,255,255,0.035);--fg:#eeeef3;--muted:#6e6e85;--accent:#fbbf24;--accent-dim:rgba(251,191,36,0.12);--border:rgba(255,255,255,0.07);--stage-color:#fbbf24}
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        html{overscroll-behavior:none}
+        body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--fg);overflow-x:hidden;min-height:100vh;min-height:100dvh;touch-action:manipulation;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+        #particleCanvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+        #app{position:relative;z-index:1;min-height:100vh;min-height:100dvh}
+        .screen{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;padding-top:calc(env(safe-area-inset-top,0px) + 1.5rem);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 1.5rem);transition:opacity .5s ease,transform .5s ease}
+        .screen.hidden{display:none!important}
+        .intro-title{font-size:clamp(2.4rem,9vw,6rem);font-weight:700;letter-spacing:-.04em;line-height:.95;text-align:center}
+        .intro-title .accent{background:linear-gradient(90deg,#fbbf24,#f59e0b,#fcd34d,#fbbf24);background-size:300% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:gradShift 4s ease-in-out infinite}
+        @keyframes gradShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+        .intro-sub{font-size:clamp(.72rem,1.8vw,1rem);font-weight:400;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;text-align:center}
+        .name-input{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1rem 1.2rem;font-size:1.05rem;color:var(--fg);font-family:'Space Grotesk',sans-serif;width:100%;max-width:360px;outline:none;transition:border-color .3s,box-shadow .3s;text-align:center;touch-action:manipulation}
+        .name-input:focus{border-color:var(--accent);box-shadow:0 0 30px rgba(251,191,36,.12)}
+        .name-input::placeholder{color:var(--muted)}
+        .btn-primary{background:var(--accent);color:#08080f;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1rem;padding:.9rem 2.4rem;border:none;border-radius:14px;cursor:pointer;transition:transform .2s,box-shadow .3s;letter-spacing:.03em;touch-action:manipulation;min-height:48px;min-width:48px}
+        .btn-primary:hover{transform:translateY(-3px);box-shadow:0 10px 40px rgba(251,191,36,.3)}
+        .btn-primary:active{transform:translateY(0) scale(.97)}
+        .btn-primary:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+        .progress-wrap{position:fixed;top:0;left:0;width:100%;height:4px;background:var(--border);z-index:100;transition:opacity .4s}
+        .progress-wrap.hidden{opacity:0;pointer-events:none}
+        .progress-fill{height:100%;background:var(--stage-color);transition:width .9s cubic-bezier(.22,1,.36,1);box-shadow:0 0 14px var(--stage-color);width:0}
+        .stage-badge{display:inline-flex;align-items:center;gap:.45rem;padding:.35rem .9rem;border:1px solid var(--stage-color);border-radius:100px;font-size:.72rem;font-weight:600;color:var(--stage-color);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1.2rem;transition:border-color .6s,color .6s}
+        .stage-title{font-size:clamp(1.7rem,5vw,3.5rem);font-weight:700;letter-spacing:-.03em;text-align:center;line-height:1.05}
+        .stage-subtitle{font-size:clamp(.82rem,1.6vw,1.05rem);color:var(--muted);margin-top:.7rem;text-align:center;max-width:500px;line-height:1.7}
+        .choices-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.8rem;width:100%;max-width:800px;margin-top:2rem}
+        @media(max-width:680px){.choices-grid{grid-template-columns:1fr;gap:.7rem}}
+        .choice-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:1.2rem 1.3rem;cursor:pointer;transition:all .35s cubic-bezier(.22,1,.36,1);position:relative;overflow:hidden;opacity:0;transform:translateY(30px);min-height:48px;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+        .choice-card.vis{opacity:1;transform:translateY(0)}
+        .choice-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(251,191,36,.04),transparent 200px);pointer-events:none}
+        .choice-card:hover,.choice-card:active{border-color:var(--stage-color);transform:translateY(-4px);box-shadow:0 10px 40px rgba(0,0,0,.3),0 0 20px rgba(251,191,36,.08)}
+        .choice-card.selected{border-color:var(--stage-color);background:rgba(251,191,36,.06);box-shadow:0 0 35px rgba(251,191,36,.12);transform:scale(1.02)}
+        .choice-card.dimmed{opacity:.2;transform:scale(.96);pointer-events:none}
+        .choice-card:focus-visible{outline:2px solid var(--stage-color);outline-offset:2px}
+        .choice-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1rem;margin-bottom:.7rem;background:var(--accent-dim);color:var(--accent);transition:all .3s;flex-shrink:0}
+        .choice-card:hover .choice-icon,.choice-card:active .choice-icon{background:var(--stage-color);color:var(--bg)}
+        .choice-text{font-weight:600;font-size:.92rem;line-height:1.4;margin-bottom:.3rem}
+        .choice-desc{font-size:.78rem;color:var(--muted);line-height:1.5}
+        .feedback-overlay{position:fixed;inset:0;background:rgba(8,8,15,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity .4s;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);padding:1.5rem;padding-top:calc(env(safe-area-inset-top,0px) + 1.5rem);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 1.5rem)}
+        .feedback-overlay.active{opacity:1;pointer-events:all}
+        .feedback-text{font-size:clamp(1rem,2.8vw,1.5rem);font-weight:500;text-align:center;max-width:520px;line-height:1.6;padding:0 1rem}
+        .feedback-text .hl{color:var(--stage-color);font-weight:700}
+        .sc-grid{margin-top:1.2rem;width:100%;max-width:300px}
+        .sc-row{display:flex;align-items:center;gap:.4rem;margin-bottom:.3rem;font-size:.7rem}
+        .sc-label{width:64px;text-align:right;color:var(--muted);font-weight:600;flex-shrink:0}
+        .sc-bar-bg{flex:1;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+        .sc-bar-fill{height:100%;border-radius:3px;transition:width .5s ease}
+        .sc-val{width:20px;font-weight:700;flex-shrink:0}
+        .score-hud{position:fixed;bottom:0;left:0;width:100%;z-index:90;transform:translateY(100%);transition:transform .5s cubic-bezier(.22,1,.36,1);padding:0 .6rem;padding-bottom:env(safe-area-inset-bottom,0px)}
+        .score-hud.visible{transform:translateY(0)}
+        .score-hud-inner{background:rgba(12,12,20,.88);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid var(--border);border-bottom:none;border-radius:14px 14px 0 0;padding:.65rem .8rem;display:flex;align-items:center;justify-content:center;gap:.7rem;flex-wrap:nowrap}
+        .hud-rank{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0;transition:all .4s;border:2px solid var(--accent)}
+        .hud-rank.pop{animation:rankPop .5s ease-out}
+        @keyframes rankPop{0%{transform:scale(1)}30%{transform:scale(1.35)}60%{transform:scale(.9)}100%{transform:scale(1)}}
+        .hud-score{font-size:1.05rem;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
+        .hud-score span{color:var(--muted);font-weight:400;font-size:.78rem}
+        .hud-type{font-size:.7rem;color:var(--muted);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
+        .analysis-spinner{width:56px;height:56px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin:1.5rem auto}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .analysis-text{font-size:1rem;color:var(--muted);animation:pulse 1.5s ease-in-out infinite}
+        @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+        .rank-letter{font-size:clamp(5.5rem,18vw,11rem);font-weight:700;line-height:1;animation:rankPulse 2.5s ease-in-out infinite}
+        @keyframes rankPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+        .rank-s{color:#fbbf24;text-shadow:0 0 50px rgba(251,191,36,.4),0 0 100px rgba(251,191,36,.15)}
+        .rank-a{color:#34d399;text-shadow:0 0 50px rgba(52,211,153,.4),0 0 100px rgba(52,211,153,.15)}
+        .rank-b{color:#22d3ee;text-shadow:0 0 50px rgba(34,211,238,.3),0 0 100px rgba(34,211,238,.1)}
+        .rank-c{color:#fb923c;text-shadow:0 0 50px rgba(251,146,60,.3),0 0 100px rgba(251,146,60,.1)}
+        .rank-d{color:#f87171;text-shadow:0 0 50px rgba(248,113,113,.3),0 0 100px rgba(248,113,113,.1)}
+        .trait-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.55rem}
+        .trait-label{width:78px;font-size:.73rem;font-weight:600;color:var(--muted);text-align:right;flex-shrink:0}
+        @media(max-width:380px){.trait-label{width:62px;font-size:.68rem}}
+        .trait-bar-bg{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+        .trait-bar-fill{height:100%;border-radius:3px;transition:width 1.6s cubic-bezier(.22,1,.36,1);width:0}
+        .trait-val{width:32px;font-size:.76rem;font-weight:700;flex-shrink:0}
+        .tl-item{padding:.85rem 0 .85rem 1.3rem;border-left:2px solid var(--border);position:relative;margin-left:4px}
+        .tl-item::before{content:'';position:absolute;left:-6px;top:1.1rem;width:10px;height:10px;border-radius:50%;background:var(--dot-color,var(--accent))}
+        .tl-stage{font-size:.66rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.15rem}
+        .tl-choice{font-size:.82rem;font-weight:500;line-height:1.4}
+        .tl-note{font-size:.72rem;color:var(--muted);margin-top:.15rem;font-style:italic;line-height:1.45}
+        .verdict-box{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.3rem;line-height:1.7;font-size:.88rem;color:var(--muted)}
+        .verdict-box strong{color:var(--fg)}
+        .quote-card{background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--stage-color);border-radius:0 12px 12px 0;padding:1rem 1.2rem;margin-bottom:.6rem}
+        .quote-text{font-size:.85rem;font-style:italic;line-height:1.6;color:var(--fg);opacity:.85}
+        .quote-author{font-size:.72rem;color:var(--muted);margin-top:.35rem;font-weight:600}
+        .blob{position:fixed;border-radius:50%;filter:blur(80px);opacity:.1;pointer-events:none;z-index:0;transition:background 1.5s ease}
+        .blob-1{width:300px;height:300px;top:-90px;right:-90px;background:var(--stage-color);animation:bfloat1 9s ease-in-out infinite}
+        .blob-2{width:240px;height:240px;bottom:-50px;left:-50px;background:var(--stage-color);animation:bfloat2 11s ease-in-out infinite}
+        @keyframes bfloat1{0%,100%{transform:translate(0,0)}50%{transform:translate(-35px,35px)}}
+        @keyframes bfloat2{0%,100%{transform:translate(0,0)}50%{transform:translate(25px,-25px)}}
+        .shake{animation:shake .3s ease-out}
+        @keyframes shake{0%,100%{transform:translate(0)}20%{transform:translate(-3px,2px)}40%{transform:translate(3px,-2px)}60%{transform:translate(-2px,2px)}80%{transform:translate(2px,-1px)}}
+        .deco-line{height:3px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--stage-color),transparent);margin-bottom:1.8rem;opacity:.6}
+        .score-big{font-size:clamp(2.5rem,8vw,4rem);font-weight:700;letter-spacing:-.04em}
+        .type-badge{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem 1rem;border:1px solid var(--stage-color);border-radius:100px;font-size:.75rem;font-weight:600;color:var(--stage-color);letter-spacing:.08em;text-transform:uppercase}
+        ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+        @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+    </style>
+</head>
+<body>
+    <canvas id="particleCanvas" aria-hidden="true"></canvas>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="progress-wrap hidden" id="progressWrap"><div class="progress-fill" id="progressFill"></div></div>
+
+    <div class="score-hud" id="scoreHud">
+        <div class="score-hud-inner">
+            <div class="hud-rank" id="hudRank">—</div>
+            <div class="hud-score" id="hudScore">0<span> / 108</span></div>
+            <div class="hud-type" id="hudType">—</div>
+        </div>
+    </div>
+
+    <div id="app">
+        <section class="screen" id="introScreen" aria-label="Welcome">
+            <div style="max-width:560px;text-align:center">
+                <div class="intro-sub" style="margin-bottom:1rem">The Decision Game</div>
+                <h1 class="intro-title">Founder's<br><span class="accent">Journey</span></h1>
+                <p style="color:var(--muted);margin-top:1.4rem;line-height:1.75;font-size:.95rem;max-width:420px;margin-left:auto;margin-right:auto">7 stages. 7 decisions. Every choice shapes whether you become a legendary founder or fade into obscurity. There are no right answers — only <em style="color:var(--fg)">your</em> answers.</p>
+                <div style="margin-top:2.4rem">
+                    <input type="text" class="name-input" id="nameInput" placeholder="Enter your name, Founder" maxlength="24" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" aria-label="Your name">
+                </div>
+                <div style="margin-top:1.2rem">
+                    <button class="btn-primary" id="startBtn" disabled aria-label="Start the game">Begin the Journey</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="screen hidden" id="gameScreen" aria-label="Game stage" style="padding-bottom:5.5rem">
+            <div style="width:100%;max-width:800px;text-align:center">
+                <div class="stage-badge" id="stageBadge"><i class="fas fa-lightbulb" id="stageIcon"></i><span id="stageNum">STAGE 01 / 07</span></div>
+                <h2 class="stage-title" id="stageTitle"></h2>
+                <p class="stage-subtitle" id="stageSub" style="margin:0 auto"></p>
+                <div class="choices-grid" id="choicesGrid" role="group" aria-label="Choices"></div>
+            </div>
+        </section>
+
+        <div class="feedback-overlay" id="fbOverlay" aria-live="polite">
+            <div class="feedback-text" id="fbText"></div>
+            <div class="sc-grid" id="scGrid"></div>
+        </div>
+
+        <section class="screen hidden" id="analysisScreen" aria-label="Analyzing">
+            <div style="text-align:center">
+                <div class="analysis-spinner"></div>
+                <div class="analysis-text" id="analysisText">Analyzing your founder profile...</div>
+            </div>
+        </section>
+
+        <section class="screen hidden" id="resultsScreen" style="justify-content:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 2rem);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 2rem);overflow-y:auto" aria-label="Results">
+            <div style="width:100%;max-width:680px" id="resultsContent"></div>
+        </section>
+    </div>
+
+<script>
+var STAGES=[
+{title:"The Spark",subtitle:"You've decided to build something. But the first question isn't how — it's what. What problem is worth years of your life?",icon:"fa-lightbulb",color:"#c084fc",choices:[
+{text:"Solve a personal pain point you've lived with for years",desc:"Deep understanding, but the market might be small",icon:"fa-heart",scores:{vision:4,execution:3,resilience:2,leadership:2,strategy:1},fb:"You chose <hl>empathy over market size</hl>. Some of the greatest companies started by scratching a personal itch no one else cared about."},
+{text:"Chase a massive trending market with huge TAM",desc:"Big opportunity, but you might lack deep conviction",icon:"fa-chart-line",scores:{vision:1,execution:2,resilience:1,leadership:1,strategy:5},fb:"You went for the <hl>biggest market you could find</hl>. Ambitious — but without deep personal conviction, the tough months will test you."},
+{text:"Build something technically impressive no one else can",desc:"Your technical edge is your moat, but will people care?",icon:"fa-microchip",scores:{vision:3,execution:4,resilience:1,leadership:1,strategy:1},fb:"You bet on <hl>technical superiority</hl>. Engineers love this — but make sure you're not building a solution in search of a problem."},
+{text:"Adapt a proven model to an underserved market",desc:"Lower risk, but you'll need to out-execute the original",icon:"fa-arrows-rotate",scores:{vision:1,execution:2,resilience:2,leadership:2,strategy:4},fb:"A <hl>proven model, new market</hl>. Smart strategic thinking — but execution speed will be everything here."}
+]},
+{title:"The Partner",subtitle:"Building alone is a marathon. The right co-founder cuts the distance in half — or doubles the weight.",icon:"fa-handshake",color:"#22d3ee",choices:[
+{text:"Partner with a close friend who shares your passion",desc:"Trust is built-in, but hard conversations get personal",icon:"fa-user-group",scores:{vision:2,execution:1,resilience:1,leadership:4,strategy:1},fb:"You chose <hl>trust over skill alignment</hl>. Many legendary duos started as friends — but business can strain the deepest bonds."},
+{text:"Find someone whose skills perfectly complement yours",desc:"Maximum coverage, but trust must be built from zero",icon:"fa-puzzle-piece",scores:{vision:2,execution:4,resilience:3,leadership:2,strategy:3},fb:"A <hl>complementary co-founder</hl>. Investors love this — you cover more ground and reduce single points of failure."},
+{text:"Go solo — maintain full control and equity",desc:"No conflicts, no compromises — but no one to share the weight",icon:"fa-person",scores:{vision:3,execution:2,resilience:4,leadership:3,strategy:1},fb:"The <hl>solo path</hl>. Lonelier but cleaner. Every 3am panic is yours alone. Are you ready?"},
+{text:"Partner with an experienced industry veteran",desc:"Instant credibility, but power dynamics are tricky",icon:"fa-crown",scores:{vision:3,execution:3,resilience:2,leadership:1,strategy:4},fb:"An <hl>industry veteran</hl>. You gain decades of wisdom — but make sure you're not along for someone else's ride."}
+]},
+{title:"The Fuel",subtitle:"Ideas are free. Execution costs money. How you fund the early days shapes everything that follows.",icon:"fa-fire-flame-curved",color:"#fbbf24",choices:[
+{text:"Bootstrap with your own savings",desc:"Full ownership, but every dollar spent is personal",icon:"fa-piggy-bank",scores:{vision:3,execution:2,resilience:5,leadership:3,strategy:2},fb:"You chose <hl>bootstrap discipline</hl>. This builds incredible resilience — but don't let pride prevent smart capital later."},
+{text:"Raise a seed round from day one",desc:"Fuel to move fast, but expectations arrive early",icon:"fa-rocket",scores:{vision:2,execution:4,resilience:1,leadership:2,strategy:4},fb:"<hl>Raising early</hl> gives you speed and validation — but the clock starts ticking immediately."},
+{text:"Join an accelerator program",desc:"Structured support, small investment, intense pressure",icon:"fa-bolt",scores:{vision:4,execution:3,resilience:2,leadership:3,strategy:3},fb:"An <hl>accelerator</hl> gives you a crash course in startup mechanics and a powerful network."},
+{text:"Fund through consulting or side projects",desc:"Sustainable but splits your focus and energy",icon:"fa-briefcase",scores:{vision:1,execution:4,resilience:4,leadership:1,strategy:2},fb:"<hl>Self-funding through services</hl> — slow but steady. Watch out: the side hustle can become the main hustle."}
+]},
+{title:"The Build",subtitle:"What you build, how fast you build it, and who you build it for — these choices define your product's soul.",icon:"fa-hammer",color:"#34d399",choices:[
+{text:"Ship a minimal MVP in 2 weeks",desc:"Speed to learn, but might feel unfinished",icon:"fa-forward-fast",scores:{vision:1,execution:5,resilience:2,leadership:2,strategy:3},fb:"A <hl>2-week MVP</hl>. You'll learn faster than anyone — but make sure 'minimal' doesn't mean 'forgettable'."},
+{text:"Spend 6 months building the perfect product",desc:"Polished, but the market might shift beneath you",icon:"fa-gem",scores:{vision:5,execution:1,resilience:2,leadership:2,strategy:1},fb:"You chose <hl>perfection over speed</hl>. Beautiful product — but are you building for users or your portfolio?"},
+{text:"Pre-sell before writing a single line of code",desc:"Validate demand first, but delivering becomes high-stakes",icon:"fa-tag",scores:{vision:3,execution:3,resilience:3,leadership:4,strategy:4},fb:"<hl>Pre-selling</hl> — the ultimate validation. If people pay before it exists, you've got something real."},
+{text:"Build in public with constant community feedback",desc:"Transparency builds loyalty, but invites criticism early",icon:"fa-bullhorn",scores:{vision:4,execution:3,resilience:2,leadership:5,strategy:2},fb:"<hl>Building in public</hl> is community-led growth at its finest. Users become advocates before the product is done."}
+]},
+{title:"The Growth",subtitle:"Product is built. Now the hardest question: how do you get it into the hands of people who need it?",icon:"fa-seedling",color:"#fb923c",choices:[
+{text:"Chase virality on social media",desc:"Explosive potential, but unpredictable and short-lived",icon:"fa-fire",scores:{vision:2,execution:4,resilience:1,leadership:2,strategy:1},fb:"Going for <hl>virality</hl> is high-risk, high-reward. When it works it's magic — when it doesn't, you've burned weeks."},
+{text:"Master one channel until it's printing money",desc:"Deep expertise in one area, but slow to diversify",icon:"fa-crosshairs",scores:{vision:2,execution:5,resilience:4,leadership:2,strategy:3},fb:"<hl>One channel mastery</hl> — this is how most successful startups grow. Depth beats breadth early on."},
+{text:"Build strategic partnerships and B2B deals",desc:"Stable and scalable, but slow and relationship-dependent",icon:"fa-handshake-angle",scores:{vision:2,execution:3,resilience:2,leadership:4,strategy:5},fb:"<hl>Partnerships and B2B</hl> — the sophisticated path. Slower to start, but each deal compounds."},
+{text:"Invest heavily in paid advertising",desc:"Fast and scalable if unit economics work, but burns cash",icon:"fa-money-bill-trend-up",scores:{vision:1,execution:2,resilience:1,leadership:1,strategy:5},fb:"<hl>Paid ads</hl> — you're buying growth. If unit economics are solid this is a machine. If not, it's a furnace."}
+]},
+{title:"The Storm",subtitle:"Every startup faces a moment where the ground disappears. Revenue drops, a key person leaves, the market shifts. This is yours.",icon:"fa-cloud-bolt",color:"#f87171",choices:[
+{text:"Pivot the entire product direction",desc:"Bold and decisive, but you lose everything you've built",icon:"fa-shuffle",scores:{vision:5,execution:3,resilience:4,leadership:2,strategy:3},fb:"You chose to <hl>pivot</hl>. The hardest decision — killing your baby to save the company. It takes courage most don't have."},
+{text:"Cut costs ruthlessly and double down on what works",desc:"Disciplined focus, but might miss the real problem",icon:"fa-compress",scores:{vision:2,execution:5,resilience:3,leadership:3,strategy:4},fb:"<hl>Focus and efficiency</hl> — the pragmatic response. You're betting the core is sound. Often the right call."},
+{text:"Raise emergency bridge funding to buy time",desc:"Buys runway, but dilutes ownership and creates desperation",icon:"fa-life-ring",scores:{vision:1,execution:2,resilience:1,leadership:2,strategy:4},fb:"<hl>Emergency funding</hl> is a gamble — trading ownership for time. It changes the power dynamic forever."},
+{text:"Shut it down gracefully and start fresh",desc:"Painful but honest — failure is a founder's best teacher",icon:"fa-door-open",scores:{vision:3,execution:2,resilience:5,leadership:3,strategy:2},fb:"Choosing to <hl>walk away</hl> takes more strength than most realize. Those who can do this often win big eventually."}
+]},
+{title:"The Crossroads",subtitle:"You've survived. You're standing at the fork between comfort and greatness. What does your gut say?",icon:"fa-code-branch",color:"#f472b6",choices:[
+{text:"Sell the company while the market is hot",desc:"Secure your outcome, but you'll always wonder 'what if'",icon:"fa-money-bill-wave",scores:{vision:1,execution:2,resilience:2,leadership:2,strategy:5},fb:"You chose <hl>the exit</hl>. A sale is a win — don't let anyone tell you otherwise. But 'what if' follows you."},
+{text:"Raise a Series A and go all-in on the vision",desc:"Maximum upside, maximum pressure, no safety net",icon:"fa-jet-fighter-up",scores:{vision:3,execution:4,resilience:2,leadership:4,strategy:3},fb:"<hl>Going all-in</hl>. This is where founders are made or broken. You're betting everything on the vision."},
+{text:"Stay profitable and grow organically",desc:"Sustainable and independent, but a slower trajectory",icon:"fa-leaf",scores:{vision:4,execution:3,resilience:5,leadership:3,strategy:2},fb:"<hl>Organic growth</hl> — the patient founder's path. You own your destiny. You'll sleep at night."},
+{text:"Expand aggressively into new markets",desc:"Huge potential, but you're spreading dangerously thin",icon:"fa-globe",scores:{vision:2,execution:4,resilience:1,leadership:3,strategy:5},fb:"<hl>Aggressive expansion</hl> — playing for empire. High risk of overextension, but the reward is domination."}
+]}
+];
+
+/* MAX_TOTAL = sum of best possible choice per stage = 108 */
+var MAX_TOTAL = 108;
+
+var TRAIT_LABELS={vision:"Vision",execution:"Execution",resilience:"Resilience",leadership:"Leadership",strategy:"Strategy"};
+var TRAIT_COLORS={vision:"#c084fc",execution:"#34d399",resilience:"#f87171",leadership:"#22d3ee",strategy:"#fbbf24"};
+var ARCHETYPES={
+    vision:{name:"The Visionary",desc:"You see what others can't. Your strength is imagining futures that don't exist yet and making others believe in them. The world needs people who can see around corners."},
+    execution:{name:"The Builder",desc:"You make things happen. While others dream, you ship. Your strength is turning abstract ideas into tangible reality. Ideas are cheap — execution is everything."},
+    resilience:{name:"The Survivor",desc:"You take hits and keep moving. Your strength is the grit that separates founders who quit from founders who break through. Pain is your fuel."},
+    leadership:{name:"The Commander",desc:"You inspire people to follow you into the unknown. Your strength is building teams that would walk through fire for the mission. Culture is your weapon."},
+    strategy:{name:"The Architect",desc:"You think in systems and advantages. Your strength is finding asymmetric paths that others completely overlook. Chess, not checkers."}
+};
+
+var QUOTES={
+    s_vision:[{t:"The best way to predict the future is to invent it.",a:"Alan Kay"},{t:"Your time is limited, so don't waste it living someone else's life.",a:"Steve Jobs"},{t:"Logic will get you from A to B. Imagination will take you everywhere.",a:"Albert Einstein"}],
+    s_execution:[{t:"Ideas are worthless. Execution is everything.",a:"Naval Ravikant"},{t:"Move fast and break things. Unless you are breaking stuff, you are not moving fast enough.",a:"Mark Zuckerberg"},{t:"The secret of getting ahead is getting started.",a:"Mark Twain"}],
+    s_resilience:[{t:"It is not the strongest of the species that survives, nor the most intelligent. It is the one most adaptable to change.",a:"Leon C. Megginson"},{t:"Success is not final, failure is not fatal: it is the courage to continue that counts.",a:"Winston Churchill"},{t:"The phoenix must burn to emerge.",a:"Janet Fitch"}],
+    s_leadership:[{t:"A leader is best when people barely know he exists. When his work is done, his aim fulfilled, they will say: we did it ourselves.",a:"Lao Tzu"},{t:"If you want to build a ship, don't drum up the men to gather wood. Instead, teach them to yearn for the vast and endless sea.",a:"Antoine de Saint-Exupery"},{t:"People don't buy what you do; they buy why you do it.",a:"Simon Sinek"}],
+    s_strategy:[{t:"Strategy without process is a daydream. Process without strategy is a nightmare.",a:"Japanese Proverb"},{t:"In the middle of difficulty lies opportunity.",a:"Albert Einstein"},{t:"All men can see these tactics whereby I conquer, but what none can see is the strategy out of which victory is evolved.",a:"Sun Tzu"}],
+    a_vision:[{t:"The only way to do great work is to love what you do.",a:"Steve Jobs"},{t:"Vision is the art of seeing what is invisible to others.",a:"Jonathan Swift"},{t:"What you see depends on what you look for.",a:"John Lubbock"}],
+    a_execution:[{t:"Done is better than perfect.",a:"Sheryl Sandberg"},{t:"If you are not embarrassed by the first version of your product, you've launched too late.",a:"Reid Hoffman"},{t:"The way to get started is to quit talking and begin doing.",a:"Walt Disney"}],
+    a_resilience:[{t:"I have not failed. I've just found 10,000 ways that won't work.",a:"Thomas Edison"},{t:"Fall seven times, stand up eight.",a:"Japanese Proverb"},{t:"The obstacle is the way.",a:"Marcus Aurelius"}],
+    a_leadership:[{t:"Before you are a leader, success is all about growing yourself. When you become a leader, success is all about growing others.",a:"Jack Welch"},{t:"Great leaders are almost always great simplifiers.",a:"Colin Powell"},{t:"Management is doing things right; leadership is doing the right things.",a:"Peter Drucker"}],
+    a_strategy:[{t:"If you don't have a competitive advantage, don't compete.",a:"Jack Welch"},{t:"Strategy is about making choices, trade-offs. It's about deliberately choosing to be different.",a:"Michael Porter"},{t:"The essence of strategy is choosing what not to do.",a:"Michael Porter"}],
+    b_vision:[{t:"Every accomplishment starts with the decision to try.",a:"John F. Kennedy"},{t:"The future belongs to those who believe in the beauty of their dreams.",a:"Eleanor Roosevelt"},{t:"See things not as they are, but as they can be.",a:"Anonymous"}],
+    b_execution:[{t:"You don't have to be great to start, but you have to start to be great.",a:"Zig Ziglar"},{t:"Action is the foundational key to all success.",a:"Pablo Picasso"},{t:"A year from now you may wish you had started today.",a:"Karen Lamb"}],
+    b_resilience:[{t:"Tough times never last, but tough people do.",a:"Robert H. Schuller"},{t:"Strength does not come from winning. Your struggles develop your strengths.",a:"Arnold Schwarzenegger"},{t:"Rock bottom became the solid foundation on which I rebuilt my life.",a:"J.K. Rowling"}],
+    b_leadership:[{t:"Become the kind of leader that people would follow voluntarily, even if you had no title or position.",a:"Brian Tracy"},{t:"A true leader has the confidence to stand alone, the courage to make tough decisions.",a:"Douglas MacArthur"},{t:"Leadership is an action, not a position.",a:"Donald McGannon"}],
+    b_strategy:[{t:"By failing to prepare, you are preparing to fail.",a:"Benjamin Franklin"},{t:"Know the enemy and know yourself; in a hundred battles you will never be in peril.",a:"Sun Tzu"},{t:"However beautiful the strategy, you should occasionally look at the results.",a:"Winston Churchill"}],
+    c_vision:[{t:"If you can dream it, you can do it. But first you need a clearer dream.",a:"Walt Disney (adapted)"},{t:"Start where you are. Use what you have. Do what you can.",a:"Arthur Ashe"},{t:"Vision without execution is just hallucination.",a:"Thomas Edison"}],
+    c_execution:[{t:"The only impossible journey is the one you never begin.",a:"Tony Robbins"},{t:"It always seems impossible until it's done.",a:"Nelson Mandela"},{t:"Do what you can, with what you have, where you are.",a:"Theodore Roosevelt"}],
+    c_resilience:[{t:"When everything seems to be going against you, remember that the airplane takes off against the wind, not with it.",a:"Henry Ford"},{t:"Our greatest glory is not in never falling, but in rising every time we fall.",a:"Confucius"},{t:"Character cannot be developed in ease and quiet.",a:"Helen Keller"}],
+    c_leadership:[{t:"The greatest leader is not the one who does the greatest things, but the one who gets people to do the greatest things.",a:"Ronald Reagan"},{t:"To handle yourself, use your head; to handle others, use your heart.",a:"Eleanor Roosevelt"},{t:"Leadership and learning are indispensable to each other.",a:"John F. Kennedy"}],
+    c_strategy:[{t:"Failing to plan is planning to fail.",a:"Alan Lakein"},{t:"A goal without a plan is just a wish.",a:"Antoine de Saint-Exupery"},{t:"In business, the competition will bite you if you keep running; if you stand still, they will swallow you.",a:"William S. Knudsen"}],
+    d_vision:[{t:"The only thing worse than being blind is having sight but no vision.",a:"Helen Keller"},{t:"Where there is no vision, the people perish.",a:"Proverbs 29:18"},{t:"Don't be afraid to start over. It's a new chance to rebuild what you truly want.",a:"Anonymous"}],
+    d_execution:[{t:"Well done is better than well said.",a:"Benjamin Franklin"},{t:"Knowing is not enough; we must apply. Willing is not enough; we must do.",a:"Johann Wolfgang von Goethe"},{t:"The journey of a thousand miles begins with one step.",a:"Lao Tzu"}],
+    d_resilience:[{t:"It does not matter how slowly you go as long as you do not stop.",a:"Confucius"},{t:"You may have to fight a battle more than once to win it.",a:"Margaret Thatcher"},{t:"Pain is temporary. Quitting lasts forever.",a:"Lance Armstrong"}],
+    d_leadership:[{t:"He who has never learned to obey cannot be a good commander.",a:"Aristotle"},{t:"A good plan violently executed now is better than a perfect plan executed next week.",a:"George S. Patton"},{t:"The task of leadership is not to put greatness into people, but to elicit it.",a:"John Buchan"}],
+    d_strategy:[{t:"If you don't know where you are going, any road will get you there.",a:"Lewis Carroll"},{t:"Chance favors the prepared mind.",a:"Louis Pasteur"},{t:"Even a dead fish can go with the flow. You need strategy to swim upstream.",a:"Anonymous"}]
+};
+
+var playerName="",currentStage=0,playerChoices=[],scores={vision:0,execution:0,resilience:0,leadership:0,strategy:0},isSelecting=false;
+
+function $(id){return document.getElementById(id)}
+var introScreen=$("introScreen"),gameScreen=$("gameScreen"),analysisScreen=$("analysisScreen"),resultsScreen=$("resultsScreen");
+var fbOverlay=$("fbOverlay"),fbText=$("fbText"),scGrid=$("scGrid");
+var progressWrap=$("progressWrap"),progressFill=$("progressFill");
+var nameInput=$("nameInput"),startBtn=$("startBtn");
+var scoreHud=$("scoreHud"),hudRank=$("hudRank"),hudScore=$("hudScore"),hudType=$("hudType");
+
+function getTotal(){var t=0,k=Object.keys(scores);for(var i=0;i<k.length;i++)t+=scores[k[i]];return t}
+function getRank(total){if(total>=92)return"S";if(total>=76)return"A";if(total>=59)return"B";if(total>=43)return"C";return"D"}
+function getRankClass(r){return"rank-"+r.toLowerCase()}
+function getRankColor(r){return{S:"#fbbf24",A:"#34d399",B:"#22d3ee",C:"#fb923c",D:"#f87171"}[r]}
+function getArchetype(){var k=Object.keys(scores),h="vision";for(var i=0;i<k.length;i++){if(scores[k[i]]>scores[h])h=k[i]}return h}
+function getTypeName(arch){return ARCHETYPES[arch].name}
+function pickQuote(rank,arch){var key=rank.toLowerCase()+"_"+arch;var pool=QUOTES[key];if(!pool)pool=QUOTES["b_vision"];var seed=0;for(var i=0;i<playerChoices.length;i++){seed+=playerChoices[i].stageIdx*7+playerChoices[i].choiceIdx}return pool[seed%pool.length]}
+
+nameInput.addEventListener("input",function(){startBtn.disabled=nameInput.value.trim().length===0});
+nameInput.addEventListener("keydown",function(e){if(e.key==="Enter"&&!startBtn.disabled)startBtn.click()});
+startBtn.addEventListener("click",function(){playerName=nameInput.value.trim();switchScreen(gameScreen);progressWrap.classList.remove("hidden");scoreHud.classList.add("visible");updateHud();loadStage(0)});
+
+function switchScreen(t){var s=[introScreen,gameScreen,analysisScreen,resultsScreen];for(var i=0;i<s.length;i++)s[i].classList.add("hidden");t.classList.remove("hidden");window.scrollTo({top:0,behavior:"smooth"})}
+
+function updateHud(){var total=getTotal(),rank=getRank(total),arch=getArchetype(),rc=getRankColor(rank);hudRank.textContent=rank;hudRank.style.color=rc;hudRank.style.borderColor=rc;hudScore.innerHTML=total+"<span> / "+MAX_TOTAL+"</span>";hudType.textContent=getTypeName(arch);hudRank.classList.remove("pop");void hudRank.offsetWidth;hudRank.classList.add("pop")}
+
+function loadStage(idx){
+    var stage=STAGES[idx];currentStage=idx;
+    document.documentElement.style.setProperty("--stage-color",stage.color);
+    progressFill.style.width=(idx/STAGES.length*100)+"%";
+    $("stageIcon").className="fas "+stage.icon;
+    $("stageNum").textContent="STAGE "+String(idx+1).padStart(2,"0")+" / "+String(STAGES.length).padStart(2,"0");
+    $("stageTitle").textContent=stage.title;
+    $("stageSub").textContent=stage.subtitle;
+    var grid=$("choicesGrid");grid.innerHTML="";
+    for(var i=0;i<stage.choices.length;i++){
+        (function(ch,ci){
+            var card=document.createElement("div");card.className="choice-card";
+            card.setAttribute("tabindex","0");card.setAttribute("role","button");card.setAttribute("aria-label",ch.text);
+            card.innerHTML='<div class="choice-icon"><i class="fas '+ch.icon+'"></i></div><div class="choice-text">'+ch.text+'</div><div class="choice-desc">'+ch.desc+'</div>';
+            card.addEventListener("mousemove",function(e){var r=card.getBoundingClientRect();card.style.setProperty("--mx",((e.clientX-r.left)/r.width*100)+"%");card.style.setProperty("--my",((e.clientY-r.top)/r.height*100)+"%")});
+            card.addEventListener("touchstart",function(e){var t=e.touches[0];var r=card.getBoundingClientRect();card.style.setProperty("--mx",((t.clientX-r.left)/r.width*100)+"%");card.style.setProperty("--my",((t.clientY-r.top)/r.height*100)+"%")},{passive:true});
+            card.addEventListener("click",function(){pickChoice(idx,ci,card)});
+            card.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();pickChoice(idx,ci,card)}});
+            grid.appendChild(card);
+            setTimeout(function(){card.classList.add("vis")},60+ci*100);
+        })(stage.choices[i],i);
+    }
+}
+
+function pickChoice(stageIdx,choiceIdx,card){
+    if(isSelecting||card.classList.contains("selected"))return;
+    isSelecting=true;
+    var stage=STAGES[stageIdx],choice=stage.choices[choiceIdx];
+    var allCards=document.querySelectorAll(".choice-card");
+    for(var i=0;i<allCards.length;i++){if(allCards[i]===card)allCards[i].classList.add("selected");else allCards[i].classList.add("dimmed")}
+    $("app").classList.add("shake");setTimeout(function(){$("app").classList.remove("shake")},300);
+    playerChoices.push({stageIdx:stageIdx,choiceIdx:choiceIdx});
+    var keys=Object.keys(choice.scores);for(var j=0;j<keys.length;j++)scores[keys[j]]+=choice.scores[keys[j]];
+    updateHud();
+    var tKeys=Object.keys(scores),sgHTML="";
+    for(var s=0;s<tKeys.length;s++){var tk=tKeys[s];sgHTML+='<div class="sc-row"><div class="sc-label" style="color:'+TRAIT_COLORS[tk]+'">'+TRAIT_LABELS[tk]+'</div><div class="sc-bar-bg"><div class="sc-bar-fill" id="fbar-'+tk+'" style="background:'+TRAIT_COLORS[tk]+';width:0%"></div></div><div class="sc-val" style="color:'+TRAIT_COLORS[tk]+'">'+scores[tk]+'</div></div>'}
+    sgHTML+='<div class="sc-row" style="margin-top:.4rem;border-top:1px solid rgba(255,255,255,.08);padding-top:.4rem"><div class="sc-label" style="color:var(--fg);font-size:.75rem">TOTAL</div><div class="sc-bar-bg"></div><div class="sc-val" style="color:var(--fg);font-size:.8rem">'+getTotal()+' <span style="color:var(--muted);font-weight:400;font-size:.65rem">/ '+MAX_TOTAL+'</span></div></div>';
+    scGrid.innerHTML=sgHTML;
+    setTimeout(function(){
+        fbText.innerHTML=choice.fb;fbOverlay.classList.add("active");
+        setTimeout(function(){for(var b=0;b<tKeys.length;b++){var bar=$("fbar-"+tKeys[b]);if(bar)bar.style.width=Math.round(scores[tKeys[b]]/42*100)+"%"}},50);
+        setTimeout(function(){
+            fbOverlay.classList.remove("active");
+            if(stageIdx<STAGES.length-1){gameScreen.style.opacity="0";gameScreen.style.transform="translateY(20px)";setTimeout(function(){loadStage(stageIdx+1);gameScreen.style.opacity="1";gameScreen.style.transform="translateY(0)";isSelecting=false},500)}
+            else{progressFill.style.width="100%";setTimeout(function(){showAnalysis()},400)}
+        },2800);
+    },500);
+}
+
+function showAnalysis(){switchScreen(analysisScreen);scoreHud.classList.remove("visible");var msgs=["Analyzing your founder profile...","Evaluating decision patterns...","Mapping your strengths and blind spots...","Generating your results..."];var mi=0,el=$("analysisText");var iv=setInterval(function(){if(++mi<msgs.length)el.textContent=msgs[mi]},750);setTimeout(function(){clearInterval(iv);showResults()},3200)}
+
+function showResults(){
+    switchScreen(resultsScreen);progressWrap.classList.add("hidden");
+    var total=getTotal(),rank=getRank(total),rClass=getRankClass(rank),rColor=getRankColor(rank);
+    var arch=getArchetype(),archData=ARCHETYPES[arch];
+    var tKeys=Object.keys(scores);
+    var barsHTML="";
+    for(var b=0;b<tKeys.length;b++){var tk=tKeys[b];barsHTML+='<div class="trait-row"><div class="trait-label">'+TRAIT_LABELS[tk]+'</div><div class="trait-bar-bg"><div class="trait-bar-fill" id="rbar-'+tk+'" style="background:'+TRAIT_COLORS[tk]+'"></div></div><div class="trait-val" style="color:'+TRAIT_COLORS[tk]+'">'+scores[tk]+'</div></div>'}
+    var quote=pickQuote(rank,arch);
+    var quote2=pickQuote(rank==="S"?"A":rank==="D"?"C":rank,arch==="vision"?"execution":"vision");
+    var verdict=generateVerdict(total,rank,arch);
+    var tlHTML="";
+    for(var t=0;t<playerChoices.length;t++){var pc=playerChoices[t],st=STAGES[pc.stageIdx],ch=st.choices[pc.choiceIdx];var noteClean=ch.fb.replace(/<hl>/g,"").replace(/<\/hl>/g,"");tlHTML+='<div class="tl-item" style="--dot-color:'+st.color+';border-color:'+st.color+'25"><div class="tl-stage" style="color:'+st.color+'">Stage '+(pc.stageIdx+1)+': '+st.title+'</div><div class="tl-choice">'+ch.text+'</div><div class="tl-note">'+noteClean+'</div></div>'}
+    var rLabel={S:"Visionary Founder",A:"Strategic Founder",B:"Promising Founder",C:"Developing Founder",D:"Needs Work"}[rank];
+    var pct=Math.round(total/MAX_TOTAL*100);
+    var c=$("resultsContent");
+    c.innerHTML=
+        '<div class="deco-line" style="background:linear-gradient(90deg,transparent,'+rColor+',transparent)"></div>'+
+        '<div style="text-align:center;margin-bottom:1.8rem">'+
+            '<div style="font-size:.78rem;color:var(--muted);letter-spacing:.16em;text-transform:uppercase;margin-bottom:.5rem">'+playerName+'\'s Founder Profile</div>'+
+            '<div class="rank-letter '+rClass+'">'+rank+'</div>'+
+            '<div style="font-size:1.25rem;font-weight:700;margin-top:.15rem">'+rLabel+'</div>'+
+            '<div class="score-big" style="color:'+rColor+';margin-top:.3rem">'+total+'<span style="font-size:.4em;color:var(--muted);font-weight:400"> / '+MAX_TOTAL+'</span></div>'+
+            '<div style="font-size:.82rem;color:var(--muted);margin-top:.15rem">'+pct+'% of maximum possible score</div>'+
+            '<div class="type-badge" style="margin-top:.7rem;border-color:'+TRAIT_COLORS[arch]+';color:'+TRAIT_COLORS[arch]+'"><i class="fas fa-fingerprint" style="font-size:.7rem"></i> '+archData.name+'</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center;margin-bottom:1.8rem">'+
+            '<div style="flex:1;min-width:200px;max-width:260px;display:flex;align-items:center;justify-content:center"><canvas id="radarCanvas" width="280" height="280" style="width:100%;height:auto"></canvas></div>'+
+            '<div style="flex:1;min-width:200px;max-width:300px;display:flex;flex-direction:column;justify-content:center">'+
+                '<div style="font-size:.68rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.8rem">Trait Scores (max 42 each)</div>'+
+                barsHTML+
+            '</div>'+
+        '</div>'+
+        '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1.2rem">'+
+            '<div style="font-size:.68rem;color:'+TRAIT_COLORS[arch]+';letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">Your Archetype</div>'+
+            '<div style="font-size:1.1rem;font-weight:700;margin-bottom:.3rem">'+archData.name+'</div>'+
+            '<div style="color:var(--muted);font-size:.85rem;line-height:1.6">'+archData.desc+'</div>'+
+        '</div>'+
+        '<div class="verdict-box" style="margin-bottom:1.2rem">'+verdict+'</div>'+
+        '<div class="quote-card" style="border-left-color:'+rColor+'"><div class="quote-text">"'+quote.t+'"</div><div class="quote-author">— '+quote.a+'</div></div>'+
+        '<div style="margin-bottom:1.2rem"><div style="font-size:.68rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1rem">Your Journey Decisions</div>'+tlHTML+'</div>'+
+        '<div class="quote-card" style="border-left-color:'+TRAIT_COLORS[arch]+'"><div class="quote-text">"'+quote2.t+'"</div><div class="quote-author">— '+quote2.a+'</div></div>'+
+        '<div style="text-align:center;padding-top:1.5rem;padding-bottom:1rem"><button class="btn-primary" id="replayBtn" style="background:'+rColor+'">Talk to Mentors at founders@vhelpcapital.in</button></div>';
+    $("replayBtn").addEventListener("click",restartGame);
+    requestAnimationFrame(function(){setTimeout(function(){for(var b2=0;b2<tKeys.length;b2++){var bar=$("rbar-"+tKeys[b2]);if(bar)bar.style.width=Math.round(scores[tKeys[b2]]/42*100)+"%"}},200)});
+    setTimeout(function(){drawRadar()},400);
+}
+
+function generateVerdict(total,rank,arch){
+    var an=ARCHETYPES[arch].name;
+    if(rank==="S")return"<strong>"+playerName+"</strong>, your raw score of <strong>"+total+" out of "+MAX_TOTAL+"</strong> reveals a rare founder profile. As <strong>"+an+"</strong>, your instincts are razor-sharp across the board. You balance risk and reward, instinct and analysis, speed and depth. If this were real, investors would compete to back you. You don't just play the game — you redefine it.";
+    if(rank==="A")return"Solid instincts, <strong>"+playerName+"</strong>. Scoring <strong>"+total+"/"+MAX_TOTAL+"</strong> as <strong>"+an+"</strong> shows real potential. Your decision-making would make most VCs comfortable writing a check. A few more years of real-world seasoning and you'd be genuinely dangerous. You're right at the edge of elite.";
+    if(rank==="B")return"You show promise, <strong>"+playerName+"</strong>. A score of <strong>"+total+"/"+MAX_TOTAL+"</strong> as <strong>"+an+"</strong> reveals good instincts with noticeable gaps. Some choices were sharp, others inconsistent. The good news: awareness of your weak spots is the first step to closing them. Keep grinding.";
+    if(rank==="C")return"Honest assessment, <strong>"+playerName+"</strong>: <strong>"+total+"/"+MAX_TOTAL+"</strong> as <strong>"+an+"</strong> suggests several decisions would create real challenges in a startup. Your <strong>"+an+"</strong> tendency is a starting point, but other traits need serious development. Study the gaps in your timeline above.";
+    return"<strong>"+playerName+"</strong>, scoring <strong>"+total+"/"+MAX_TOTAL+"</strong> as <strong>"+an+"</strong> indicates very tough odds in a real startup environment. But no game can measure heart, hunger, or the ability to learn from failure. Every great founder was once a beginner who refused to stay one. This score is a starting line, not a finish line.";
+}
+
+function drawRadar(){
+    var cvs=$("radarCanvas");if(!cvs)return;
+    var ctx=cvs.getContext("2d"),dpr=window.devicePixelRatio||1,sz=280;
+    cvs.width=sz*dpr;cvs.height=sz*dpr;ctx.scale(dpr,dpr);
+    var cx=sz/2,cy=sz/2,maxR=sz*.34;
+    var keys=Object.keys(scores),n=keys.length,step=Math.PI*2/n,startA=-Math.PI/2,traitMax=42;
+    var frame=0,dur=50;
+    function tick(){
+        frame++;var t=Math.min(frame/dur,1),e=1-Math.pow(1-t,3);
+        ctx.clearRect(0,0,sz,sz);
+        for(var lv=1;lv<=5;lv++){var r=lv/5*maxR;ctx.beginPath();for(var i=0;i<=n;i++){var a=startA+(i%n)*step;var x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.closePath();ctx.strokeStyle="rgba(255,255,255,0.055)";ctx.lineWidth=1;ctx.stroke()}
+        for(var j=0;j<n;j++){var a2=startA+j*step;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a2)*maxR,cy+Math.sin(a2)*maxR);ctx.strokeStyle="rgba(255,255,255,0.045)";ctx.stroke()}
+        ctx.beginPath();for(var k=0;k<=n;k++){var idx=k%n;var a3=startA+idx*step;var r2=Math.max(.01,scores[keys[idx]]/traitMax)*maxR*e;var x2=cx+Math.cos(a3)*r2,y2=cy+Math.sin(a3)*r2;k===0?ctx.moveTo(x2,y2):ctx.lineTo(x2,y2)}ctx.closePath();
+        var grad=ctx.createRadialGradient(cx,cy,0,cx,cy,maxR);grad.addColorStop(0,"rgba(251,191,36,0.25)");grad.addColorStop(1,"rgba(251,191,36,0.03)");ctx.fillStyle=grad;ctx.fill();ctx.strokeStyle="rgba(251,191,36,0.6)";ctx.lineWidth=2;ctx.stroke();
+        for(var m=0;m<n;m++){var a4=startA+m*step;var r3=Math.max(.01,scores[keys[m]]/traitMax)*maxR*e;var x3=cx+Math.cos(a4)*r3,y3=cy+Math.sin(a4)*r3;ctx.beginPath();ctx.arc(x3,y3,4,0,Math.PI*2);ctx.fillStyle=TRAIT_COLORS[keys[m]];ctx.fill();ctx.strokeStyle="#08080f";ctx.lineWidth=2;ctx.stroke();var lr=maxR+22;ctx.font="600 10px Space Grotesk";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=TRAIT_COLORS[keys[m]];ctx.fillText(TRAIT_LABELS[keys[m]],cx+Math.cos(a4)*lr,cy+Math.sin(a4)*lr)}
+        if(frame<dur)requestAnimationFrame(tick);
+    }
+    tick();
+}
+
+function restartGame(){playerName="";currentStage=0;playerChoices=[];scores={vision:0,execution:0,resilience:0,leadership:0,strategy:0};isSelecting=false;nameInput.value="";startBtn.disabled=true;gameScreen.style.opacity="1";gameScreen.style.transform="translateY(0)";document.documentElement.style.setProperty("--stage-color","#fbbf24");scoreHud.classList.remove("visible");switchScreen(introScreen)}
+
+var pCanvas=$("particleCanvas"),pCtx=pCanvas.getContext("2d"),particles=[],P_COUNT=55;
+function resizePC(){pCanvas.width=window.innerWidth;pCanvas.height=window.innerHeight}
+resizePC();window.addEventListener("resize",resizePC);
+function Ptcl(){this.init()}
+Ptcl.prototype.init=function(){this.x=Math.random()*pCanvas.width;this.y=Math.random()*pCanvas.height;this.sz=Math.random()*1.6+.4;this.vx=(Math.random()-.5)*.22;this.vy=(Math.random()-.5)*.22-.12;this.op=Math.random()*.4+.06;this.life=Math.random()*200+80;this.maxLife=this.life};
+Ptcl.prototype.update=function(){this.x+=this.vx;this.y+=this.vy;this.life--;if(this.life<=0||this.x<-10||this.x>pCanvas.width+10||this.y<-10||this.y>pCanvas.height+10){this.init();this.y=pCanvas.height+10}};
+Ptcl.prototype.draw=function(){var sc=getComputedStyle(document.documentElement).getPropertyValue("--stage-color").trim();var fade=Math.min(this.life/this.maxLife,(this.maxLife-this.life)/25);var a=Math.max(0,this.op*fade);var hex=Math.max(0,Math.min(255,Math.round(a*255))).toString(16).padStart(2,"0");pCtx.beginPath();pCtx.arc(this.x,this.y,Math.max(.1,this.sz),0,Math.PI*2);pCtx.fillStyle=sc+hex;pCtx.fill()};
+for(var pi=0;pi<P_COUNT;pi++)particles.push(new Ptcl());
+function drawLines(){var sc=getComputedStyle(document.documentElement).getPropertyValue("--stage-color").trim();var maxD=100;for(var i=0;i<particles.length;i++){for(var j=i+1;j<particles.length;j++){var dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y,d=dx*dx+dy*dy;if(d<maxD*maxD){var a=(1-Math.sqrt(d)/maxD)*.06;var hex=Math.max(0,Math.min(255,Math.round(a*255))).toString(16).padStart(2,"0");pCtx.beginPath();pCtx.moveTo(particles[i].x,particles[i].y);pCtx.lineTo(particles[j].x,particles[j].y);pCtx.strokeStyle=sc+hex;pCtx.lineWidth=.5;pCtx.stroke()}}}}
+function animP(){pCtx.clearRect(0,0,pCanvas.width,pCanvas.height);for(var i=0;i<particles.length;i++){particles[i].update();particles[i].draw()}drawLines();requestAnimationFrame(animP)}
+animP();
+</script>
+</body>
+</html>
